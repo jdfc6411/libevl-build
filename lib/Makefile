@@ -53,9 +53,9 @@ $(O_DIR)/version-pic.o $(O_DIR)/version.o: override CFLAGS := $(CFLAGS) -DLIBSER
 version.c: $(O_DIR)/git-stamp.h
 
 $(O_DIR)/%-pic.o: %.c $(O_DIR)/%.d
-	$(call cc-pic-cmd,$@,$(CC) $(CFLAGS) -fPIC -c -o $@ $<)
+	$(call cc-pic-cmd,$@,$(CC) $(CFLAGS) -fPIC -g -c -o $@ $<)
 
 $(O_DIR)/%.o: %.c $(O_DIR)/%.d
-	$(call cc-cmd,$@,$(CC) $(CFLAGS) -c -o $@ $<)
+	$(call cc-cmd,$@,$(CC) $(CFLAGS) -g -c -o $@ $<)
 
 -include $(DEPFILES)

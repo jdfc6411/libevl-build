@@ -10,6 +10,7 @@
 #include <evl/syscall.h>
 #include <asm/evl/syscall.h>
 #include <uapi/evl/syscall.h>
+#include <stdio.h>
 
 ssize_t oob_read(int efd, void *buf, size_t count)
 {
@@ -53,6 +54,7 @@ int oob_ioctl(int efd, unsigned long request, ...)
 	arg = va_arg(ap, long);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &old_type);
 	ret = evl_syscall3(sys_evl_ioctl, efd, request, arg);
+	// printf("%d\n",ret);
 	pthread_setcanceltype(old_type, NULL);
 	va_end(ap);
 

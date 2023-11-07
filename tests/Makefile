@@ -52,15 +52,15 @@ clean clobber mrproper:
 	$(Q)$(MAKE) -C compile-tests O=$(O_DIR)/compile-tests V=$(V) $@ || exit 1
 
 $(HELPOBJ_ESHI): $(HELPSRC)
-	$(call cc-cmd,$@,$(Q)$(CC) -o $(@) $< -c $(ESHI_CFLAGS))
+	$(call cc-cmd,$@,$(Q)$(CC) -g -o $(@) $< -c $(ESHI_CFLAGS))
 
 $(O_DIR)/%.o: %.c $(O_DIR)/%.d
-	$(call cc-cmd,$@,$(Q)$(CC) -o $(@) $< -c $(CFLAGS))
+	$(call cc-cmd,$@,$(Q)$(CC) -g -o $(@) $< -c $(CFLAGS))
 
 $(O_DIR)/%: %.c $(O_DIR)/%.d
-	$(call ccld-cmd,$@,$(Q)$(CC) -o $(@) $< $(HELPOBJ) $(TEST_CFLAGS) $(TEST_LDFLAGS))
+	$(call ccld-cmd,$@,$(Q)$(CC) -g -o $(@) $< $(HELPOBJ) $(TEST_CFLAGS) $(TEST_LDFLAGS))
 
 $(O_DIR)/%.eshi: %.c $(O_DIR)/%.d
-	$(call ccld-cmd,$@,$(Q)$(CC) -o $(@) $< $(HELPOBJ_ESHI) $(ESHI_CFLAGS) $(ESHI_LDFLAGS))
+	$(call ccld-cmd,$@,$(Q)$(CC) -g -o $(@) $< $(HELPOBJ_ESHI) $(ESHI_CFLAGS) $(ESHI_LDFLAGS))
 
 -include $(DEPFILES)

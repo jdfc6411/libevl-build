@@ -28,9 +28,9 @@ clean clobber mrproper:
 install:
 
 $(O_DIR)/%: %.c $(O_DIR)/%.d
-	$(call ccld-cmd,$@,$(Q)$(CC) -o $(@) $< $(TEST_CFLAGS) $(TEST_LDFLAGS))
+	$(call ccld-cmd,$@,$(Q)$(CC) -g -o $(@) $< $(TEST_CFLAGS) $(TEST_LDFLAGS))
 
 $(O_DIR)/%: %.cc $(O_DIR)/%.d
-	$(call cxxld-cmd,$@,$(Q)$(CXX) -o $(@) $< $(TEST_CXXFLAGS) $(TEST_LDFLAGS))
+	$(call cxxld-cmd,$@,$(Q)$(CXX) -g -o $(@) $< $(TEST_CXXFLAGS) $(TEST_LDFLAGS))
 
 -include $(DEPFILES)
