@@ -46,6 +46,8 @@ static bool verbose;
 
 static int timeout_secs = 3;	/* Default runtime. */
 
+int mode = 0;
+
 static void *test_thread(void *arg)
 {
 	int tfd, ret, me, invalid, prev, old, new;
@@ -66,6 +68,11 @@ static void *test_thread(void *arg)
 	me = 1 << serial;
 
 	oob = !!(serial & 1);
+	if (mode == 1){
+		oob = false;
+	}else if(mode == 2){
+		oob = true;
+	}
 	if (oob) {
 		__Tcall_assert(tfd, evl_attach_self("stax.%ld:%d",
 					serial / 2, getpid()));
@@ -276,7 +283,9 @@ int main(int argc, char *argv[])
 		else
 			printf("running indefinitely.\n");
 	}
-	printf("请输入线程数");
+	printf("请输入带内外模式：");
+	scanf("%d", &mode);
+	printf("请输入线程数：");
 	scanf("%d", &num);
 
 	for (n = 0; n < num; n++) {
