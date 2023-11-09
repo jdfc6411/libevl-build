@@ -68,10 +68,10 @@ static void *test_thread(void *arg)
 	me = 1 << serial;
 
 	oob = !!(serial & 1);
-	if (mode == 1){
-		oob = false;
-	}else if(mode == 2){
-		oob = true;
+	if (mode == 1 && oob){
+		return 0;
+	}else if(mode == 2 && !oob){
+		return 0;
 	}
 	if (oob) {
 		__Tcall_assert(tfd, evl_attach_self("stax.%ld:%d",
