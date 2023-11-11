@@ -81,12 +81,13 @@ static void *test_thread(void *arg)
 		// delay = 100000;
 		/* Any in-band presence is invalid. */
 		invalid = 0x55555555;
-
+		int i = 0;
 			/*
 	 * Do not pthread_cancel() the lock owner, this would block
 	 * contenders indefinitely.
 	 */
-		while (!done) {
+		while (!done && i < 100) {
+			i++;
 			if (atomic_read(&presence_mask) & invalid)
 				atomic_add_return(&counter_proof, 1);
 			printf("lock_stax %lu\n",serial);
