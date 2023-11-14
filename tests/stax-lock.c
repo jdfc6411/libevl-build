@@ -50,9 +50,9 @@ static void *test_thread(void *arg)
 {
 	int tfd, ret, me, invalid, prev, old, new;
 	long serial = (long)arg;
-	typeof(usleep) *do_usleep;
+	// typeof(usleep) *do_usleep;
 	typeof(ioctl) *do_ioctl;
-	useconds_t delay;
+	// useconds_t delay;
 	bool oob;
 
 	/*
@@ -70,14 +70,14 @@ static void *test_thread(void *arg)
 		__Tcall_assert(tfd, evl_attach_self("stax.%ld:%d",
 					serial / 2, getpid()));
 		do_ioctl = oob_ioctl;
-		do_usleep = evl_usleep;
-		delay = 100000;
+		// do_usleep = evl_usleep;
+		// delay = 100000;
 		/* Any in-band presence is invalid. */
 		invalid = 0x55555555;
 	} else {
 		do_ioctl = ioctl;
-		do_usleep = usleep;
-		delay = 100000;
+		// do_usleep = usleep;
+		// delay = 100000;
 		/* Any oob presence is invalid. */
 		invalid = 0xAAAAAAAA;
 	}
@@ -102,7 +102,7 @@ static void *test_thread(void *arg)
 
 		__Fexpr_assert(prev & invalid);
 
-		do_usleep(delay);
+		// do_usleep(delay);
 
 		prev = atomic_read(&presence_mask);
 		do {
@@ -123,7 +123,7 @@ static void *test_thread(void *arg)
 		if (atomic_read(&presence_mask) & invalid)
 			atomic_add_return(&counter_proof, 1);
 
-		do_usleep(delay);
+		// do_usleep(delay);
 	}
 
 	return NULL;
