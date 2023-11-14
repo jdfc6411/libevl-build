@@ -46,15 +46,13 @@ static bool verbose;
 
 static int timeout_secs = 3;	/* Default runtime. */
 
-int mode = 0;
-
 static void *test_thread(void *arg)
 {
 	int tfd, ret, me, invalid, prev, old, new;
 	long serial = (long)arg;
-	// typeof(usleep) *do_usleep;
+	typeof(usleep) *do_usleep;
 	typeof(ioctl) *do_ioctl;
-	// useconds_t delay;
+	useconds_t delay;
 	bool oob;
 
 	/*
@@ -68,119 +66,65 @@ static void *test_thread(void *arg)
 	me = 1 << serial;
 
 	oob = !!(serial & 1);
-	if (mode == 1 && oob){
-		return 0;
-	}else if(mode == 2 && !oob){
-		return 0;
-	}
 	if (oob) {
 		__Tcall_assert(tfd, evl_attach_self("stax.%ld:%d",
 					serial / 2, getpid()));
 		do_ioctl = oob_ioctl;
-		// do_usleep = evl_usleep;
-		// delay = 100000;
+		do_usleep = evl_usleep;
+		delay = 100000;
 		/* Any in-band presence is invalid. */
 		invalid = 0x55555555;
-		int i = 0;
-			/*
-	 * Do not pthread_cancel() the lock owner, this would block
-	 * contenders indefinitely.
-	 */
-		while (!done && i < 100) {
-			i++;
-			if (atomic_read(&presence_mask) & invalid)
-				atomic_add_return(&counter_proof, 1);
-			printf("lock_stax %lu\n",serial);
-			ret = do_ioctl(drvfd, EVL_HECIOC_LOCK_STAX);
-			printf("stax looking %lu\n",serial);
-			__Texpr_assert(ret == 0);
-
-			prev = atomic_read(&presence_mask);
-			do {
-				old = prev;
-				new = old | me;
-				prev = atomic_cmpxchg(&presence_mask, old, new);
-			} while (prev != old);
-
-			__Fexpr_assert(prev & invalid);
-			printf("sleep %lu\n",serial);
-			// do_usleep(delay);
-			printf("after sleep %lu\n",serial);
-			prev = atomic_read(&presence_mask);
-			do {
-				old = prev;
-				new = old & ~me;
-				prev = atomic_cmpxchg(&presence_mask, old, new);
-			} while (prev != old);
-
-			__Fexpr_assert(prev & invalid);
-			printf("unlock_stax %lu\n",serial);
-			ret = do_ioctl(drvfd, EVL_HECIOC_UNLOCK_STAX);
-			__Texpr_assert(ret == 0);
-
-			/*
-			* We should observe conflicting accesses from time to
-			* time when the stax does not guard the section.
-			*/
-			if (atomic_read(&presence_mask) & invalid)
-				atomic_add_return(&counter_proof, 1);
-			printf("sleep %lu\n",serial);
-			// do_usleep(delay);
-		}
 	} else {
 		do_ioctl = ioctl;
-		// do_usleep = usleep;
-		// delay = 100000;
+		do_usleep = usleep;
+		delay = 100000;
 		/* Any oob presence is invalid. */
 		invalid = 0xAAAAAAAA;
+	}
 
-			/*
+	/*
 	 * Do not pthread_cancel() the lock owner, this would block
 	 * contenders indefinitely.
 	 */
-		while (!done) {
-			if (atomic_read(&presence_mask) & invalid)
-				atomic_add_return(&counter_proof, 1);
-			printf("lock_stax %lu\n",serial);
-			ret = do_ioctl(drvfd, EVL_HECIOC_LOCK_STAX);
-			printf("stax looking %lu\n",serial);
-			__Texpr_assert(ret == 0);
+	while (!done) {
+		if (atomic_read(&presence_mask) & invalid)
+			atomic_add_return(&counter_proof, 1);
 
-			prev = atomic_read(&presence_mask);
-			do {
-				old = prev;
-				new = old | me;
-				prev = atomic_cmpxchg(&presence_mask, old, new);
-			} while (prev != old);
+		ret = do_ioctl(drvfd, EVL_HECIOC_LOCK_STAX);
+		__Texpr_assert(ret == 0);
 
-			__Fexpr_assert(prev & invalid);
-			printf("sleep %lu\n",serial);
-			// do_usleep(delay);
-			printf("after sleep %lu\n",serial);
-			prev = atomic_read(&presence_mask);
-			do {
-				old = prev;
-				new = old & ~me;
-				prev = atomic_cmpxchg(&presence_mask, old, new);
-			} while (prev != old);
+		prev = atomic_read(&presence_mask);
+		do {
+			old = prev;
+			new = old | me;
+			prev = atomic_cmpxchg(&presence_mask, old, new);
+		} while (prev != old);
 
-			__Fexpr_assert(prev & invalid);
-			printf("unlock_stax %lu\n",serial);
-			ret = do_ioctl(drvfd, EVL_HECIOC_UNLOCK_STAX);
-			__Texpr_assert(ret == 0);
+		__Fexpr_assert(prev & invalid);
 
-			/*
-			* We should observe conflicting accesses from time to
-			* time when the stax does not guard the section.
-			*/
-			if (atomic_read(&presence_mask) & invalid)
-				atomic_add_return(&counter_proof, 1);
-			printf("sleep %lu\n",serial);
-			// do_usleep(delay);
-		}
+		do_usleep(delay);
+
+		prev = atomic_read(&presence_mask);
+		do {
+			old = prev;
+			new = old & ~me;
+			prev = atomic_cmpxchg(&presence_mask, old, new);
+		} while (prev != old);
+
+		__Fexpr_assert(prev & invalid);
+
+		ret = do_ioctl(drvfd, EVL_HECIOC_UNLOCK_STAX);
+		__Texpr_assert(ret == 0);
+
+		/*
+		 * We should observe conflicting accesses from time to
+		 * time when the stax does not guard the section.
+		 */
+		if (atomic_read(&presence_mask) & invalid)
+			atomic_add_return(&counter_proof, 1);
+
+		do_usleep(delay);
 	}
-
-
 
 	return NULL;
 }
@@ -213,8 +157,6 @@ int main(int argc, char *argv[])
 	pthread_t tids[STAX_CONCURRENCY];
 	int ret, n, prio, policy, sig, c;
 	sigset_t sigmask;
-
-	int num;
 
 	for (;;) {
 		c = getopt_long(argc, argv, short_optlist, options, NULL);
@@ -267,7 +209,6 @@ int main(int argc, char *argv[])
 
 	ret = ioctl(drvfd, EVL_HECIOC_UNLOCK_STAX);
 	__Texpr_assert(ret == 0);
-	printf("hectic driver found, testing stax mechanism...\n");
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -284,12 +225,8 @@ int main(int argc, char *argv[])
 		else
 			printf("running indefinitely.\n");
 	}
-	printf("请输入带内外模式：");
-	scanf("%d", &mode);
-	printf("请输入线程数：");
-	scanf("%d", &num);
 
-	for (n = 0; n < num; n++) {
+	for (n = 0; n < STAX_CONCURRENCY; n++) {
 		if (n & 1) {
 			prio = 1;
 			policy = SCHED_FIFO;
@@ -297,7 +234,6 @@ int main(int argc, char *argv[])
 			prio = 0;
 			policy = SCHED_OTHER;
 		}
-		printf("thread: %d, policy: %d, prio: %d\n",n, policy, prio);
 		new_thread(tids + n, policy, prio, test_thread, (void *)(long)n);
 	}
 
@@ -307,9 +243,9 @@ int main(int argc, char *argv[])
 	sigwait(&sigmask, &sig);
 	done = true;
 
-	for (n = 0; n < num; n++)
+	for (n = 0; n < STAX_CONCURRENCY; n++)
 		pthread_join(tids[n], NULL);
-	printf("thread return\n");
+
 	/*
 	 * We must have observed at least conflicting access outside
 	 * of the stax protected section, otherwise we might not have
@@ -319,5 +255,6 @@ int main(int argc, char *argv[])
 	if (verbose)
 		printf("%d legit conflicts detected\n", atomic_read(&counter_proof));
 
+	printf("stax-lock: pass\n");
 	return 0;
 }
