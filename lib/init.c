@@ -215,6 +215,7 @@ int evl_init(void)
 {
 	// pthread_once(&init_once, do_init_once);
 	do_init_once();
+	attach_evl_clocks();
 	return init_status;
 }
 
